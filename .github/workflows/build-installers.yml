@@ -30,8 +30,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      # 固定到项目基线版本: 上游 v4.2.11 就是用它发布的。
+      # 用最新的 stable 会因工具链过新而失败(例如 Kotlin 版本下限、MSVC 弃用报错)。
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.41.6'
           channel: 'stable'
           architecture: x64
           cache: true
@@ -98,8 +101,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 固定到项目基线版本: 上游 v4.2.11 就是用它发布的。
+      # 用最新的 stable 会因工具链过新而失败(例如 Kotlin 版本下限、MSVC 弃用报错)。
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.41.6'
           channel: 'stable'
           architecture: x64
           cache: true
@@ -131,11 +137,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 固定到项目基线版本: 上游 v4.2.11 就是用它发布的。
+      # 用最新的 stable 会因工具链过新而失败(例如 Kotlin 版本下限、MSVC 弃用报错)。
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.41.6'
           channel: 'stable'
           architecture: x64
           cache: true
+
+      # windows-latest 的 MSVC 14.51 开始, <experimental/coroutine> 变成硬报错,
+      # 而 flutter_inappwebview_windows 与 local_auth_windows 仍在用它。
+      # 这里在 CI 里临时给项目打补丁, 不把该改动带进仓库。
+      - name: Silence experimental coroutine error (MSVC 14.51)
+        shell: pwsh
+        run: |
+          $f = "windows/CMakeLists.txt"
+          $content = Get-Content $f -Raw
+          if ($content -notmatch "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS") {
+            $marker = "# Use Unicode for all projects."
+            $patch = @'
+          # MSVC 14.51 起 <experimental/coroutine> 会直接报错, 部分插件仍依赖它
+          add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
+          '@ + $marker
+            $content = $content.Replace($marker, $patch)
+            Set-Content -Path $f -Value $content -NoNewline
+            Write-Host "已注入编译定义"
+          }
+          Select-String -Path $f -Pattern "COROUTINE" | Select-Object -First 2
 
       - name: Build
         run: flutter build windows --release
@@ -161,8 +191,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 固定到项目基线版本: 上游 v4.2.11 就是用它发布的。
+      # 用最新的 stable 会因工具链过新而失败(例如 Kotlin 版本下限、MSVC 弃用报错)。
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.41.6'
           channel: 'stable'
           architecture: x64
           cache: true
@@ -175,12 +208,12 @@ jobs:
 
       - name: Package IPA
         run: |
+          mkdir -p "$GITHUB_WORKSPACE/out"
           cd build/ios/iphoneos
           mkdir -p Payload
           mv Runner.app Payload/
           zip -qry "$GITHUB_WORKSPACE/out/PicaComic-ios-${GITHUB_SHA::7}.ipa" Payload
-          cd "$GITHUB_WORKSPACE"
-          mkdir -p out
+          ls -lh "$GITHUB_WORKSPACE/out"
 
       - name: Build macOS
         run: flutter build macos --release
