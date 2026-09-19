@@ -95,6 +95,10 @@ class JmComicPage extends BaseComicPage<JmComicInfo> {
         showComments(App.globalContext!, id, data!.comments);
       };
 
+  /// 来自 /album 接口的 comment_total
+  @override
+  String? get commentsCount => data!.comments.toString();
+
   @override
   String get cover => getJmCoverUrl(id);
 

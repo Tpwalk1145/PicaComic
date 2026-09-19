@@ -190,6 +190,16 @@ class _ComicPageImpl extends BaseComicPage<ComicInfoData> {
     return SliverGridComics(comics: data.suggestions!, sourceKey: sourceKey);
   }
 
+  /// 漫画源可以在 loadInfo 里返回评论数, 未返回时按钮上仍显示"评论"
+  @override
+  String? get commentsCount {
+    var count = data?.commentsCount;
+    if (count == null) {
+      return null;
+    }
+    return count.toString();
+  }
+
   @override
   String get source => comicSource!.name;
 

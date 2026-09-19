@@ -477,6 +477,10 @@ class ComicInfoData with HistoryMixin {
 
   final String? subId;
 
+  /// 评论数, 由漫画源自行提供, 为 null 时详情页的评论按钮上只显示"评论"。
+  /// 与 [isFavorite] 一样只在运行时使用, 不参与 [toJson]。
+  final int? commentsCount;
+
   const ComicInfoData(
       this.title,
       this.subTitle,
@@ -491,7 +495,8 @@ class ComicInfoData with HistoryMixin {
       this.sourceKey,
       this.comicId,
       {this.isFavorite,
-      this.subId});
+      this.subId,
+      this.commentsCount});
 
   Map<String, dynamic> toJson() {
     return {
@@ -516,6 +521,18 @@ class ComicInfoData with HistoryMixin {
     return res;
   }
 
+  /// [commentsCount] 可能来自 JS, 因此可能是 int, double 或字符串,
+  /// 无法解析时视为没有评论数。公开以便漫画源解析器复用。
+  static int? parseCommentsCount(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value.toString());
+  }
+
   ComicInfoData.fromJson(Map<String, dynamic> json)
       : title = json["title"],
         subTitle = json["subTitle"],
@@ -530,7 +547,8 @@ class ComicInfoData with HistoryMixin {
         thumbnailMaxPage = 0,
         suggestions = null,
         isFavorite = json["isFavorite"],
-        subId = json["subId"];
+        subId = json["subId"],
+        commentsCount = parseCommentsCount(json["commentsCount"]);
 
   @override
   HistoryType get historyType => HistoryType(sourceKey.hashCode);

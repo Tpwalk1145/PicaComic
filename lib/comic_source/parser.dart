@@ -395,7 +395,9 @@ class ComicSourceParser {
             _key!,
             id,
             isFavorite: res["isFavorite"],
-            subId: res["subId"],));
+            subId: res["subId"],
+            commentsCount:
+                ComicInfoData.parseCommentsCount(res["commentsCount"])));
       } catch (e, s) {
         log("$e\n$s", "Network", LogLevel.error);
         return Res.error(e.toString());
