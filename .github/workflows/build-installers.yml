@@ -251,7 +251,28 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           ls -lh out
 
+      # 只构建 iOS 时不会有 zip, 而 gh release upload 遇到不存在的 glob 会直接失败,
+      # 因此这里先筛掉不存在的文件类型
       - name: Upload to release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$RELEASE_TAG" out/*.ipa out/*.zip --clobber
+        run: |
+          files=()
+          for f in out/*.ipa out/*.zip; do
+            [ -f "$f" ] && files+=("$f")
+          done
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::没有可上传的文件"
+            exit 1
+          fi
+          printf '上传: %s\n' "${files[@]}"
+          gh release upload "$RELEASE_TAG" "${files[@]}" --clobber
+
+      # 兜底: 即使 release 上传失败, 也能从 Actions 里取到安装包
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-installers
+          path: out/*
+          if-no-files-found: warn
